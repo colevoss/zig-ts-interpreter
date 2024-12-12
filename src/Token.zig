@@ -109,6 +109,7 @@ pub const Tag = enum {
 
     question, // ?
     question_question, // ??
+    question_dot, // ?.
 
     plus, // +
     increment, // ++
@@ -125,6 +126,9 @@ pub const Tag = enum {
     @"and", // &&
     pipe, // |
     @"or", // ||
+
+    inline_comment,
+    block_comment,
 
     bang, // !
     assign, // =

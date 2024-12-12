@@ -25,6 +25,5 @@ pub fn main() !void {
 }
 
 test {
-    // _ = @import("tokenizer.zig");
     _ = tok;
 }
