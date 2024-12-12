@@ -1,0 +1,3 @@
+varWith4Number = 10_000;
+a && b;
+b || c;
