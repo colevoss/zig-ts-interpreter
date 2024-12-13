@@ -1,6 +1,6 @@
 const std = @import("std");
-const tok = @import("tokenizer.zig");
-const Token = @import("Token.zig");
+const Tokenizer = @import("tokenizer.zig").Tokenizer;
+const Token = @import("token.zig").Token;
 
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
@@ -12,10 +12,11 @@ pub fn main() !void {
 
     defer file.close();
 
-    const buf = try file.readToEndAlloc(allocator, std.math.maxInt(u32));
+    // const buf = try file.readToEndAlloc(allocator, std.math.maxInt(u32));
+    const buf = try file.readToEndAllocOptions(allocator, std.math.maxInt(u32), null, @alignOf(u8), 0);
     defer allocator.free(buf);
 
-    var tokenizer = tok.Tokenizer.init(buf);
+    var tokenizer = Tokenizer.init(buf);
 
     var token: Token = tokenizer.next();
 
@@ -25,5 +26,6 @@ pub fn main() !void {
 }
 
 test {
-    _ = tok;
+    _ = @import("tokenizer.zig");
+    _ = @import("parser.zig");
 }
