@@ -5,7 +5,7 @@ const expect = std.testing.expect;
 const logger = std.log.scoped(.tokenizer);
 
 pub const Tokenizer = struct {
-    buf: [:0]const u8,
+    buf: []const u8,
     index: u32,
 
     const State = enum {
@@ -24,8 +24,8 @@ pub const Tokenizer = struct {
         dot,
         dot_dot,
 
-        double_quote_string,
-        single_quote_string,
+        double_quote_string_literal,
+        single_quote_string_literal,
         template_literal,
 
         ampersand,
@@ -49,7 +49,7 @@ pub const Tokenizer = struct {
         block_comment_asterisk, // /* block comment need to be in this state to find slash to end ->*
     };
 
-    pub fn init(buf: [:0]const u8) Tokenizer {
+    pub fn init(buf: []const u8) Tokenizer {
         return .{
             .buf = buf,
             .index = 0,
@@ -202,13 +202,13 @@ pub const Tokenizer = struct {
                     },
 
                     '"' => {
-                        state = .double_quote_string;
-                        token.tag = .double_quote_string;
+                        state = .double_quote_string_literal;
+                        token.tag = .double_quote_string_literal;
                     },
 
                     '\'' => {
-                        state = .single_quote_string;
-                        token.tag = .single_quote_string;
+                        state = .single_quote_string_literal;
+                        token.tag = .single_quote_string_literal;
                     },
 
                     '&' => {
@@ -541,7 +541,7 @@ pub const Tokenizer = struct {
                 },
 
                 // strings
-                .double_quote_string => switch (char) {
+                .double_quote_string_literal => switch (char) {
                     '"' => {
                         self.index += 1;
                         break;
@@ -549,7 +549,7 @@ pub const Tokenizer = struct {
                     else => {},
                 },
 
-                .single_quote_string => switch (char) {
+                .single_quote_string_literal => switch (char) {
                     '\'' => {
                         self.index += 1;
                         break;
@@ -737,7 +737,7 @@ test "strings" {
         \\'bar'
     ;
 
-    try testCode(code, &.{ .double_quote_string, .single_quote_string }, false);
+    try testCode(code, &.{ .double_quote_string_literal, .single_quote_string_literal }, false);
 }
 
 test "numbers" {
