@@ -1,4 +1,16 @@
-a ? b;
-a ?? b;
-a?.b;
-a ??= b;
+import { Something } from './my/test/file.js';
+
+type Foo = {
+  foo: number;
+};
+
+interface Bar {
+  bar: string;
+}
+
+export function myBestFunction(foo: string, bar: Foo): string | number | boolean {
+  return {
+    a: 1,
+    b: "hello",
+  };
+}

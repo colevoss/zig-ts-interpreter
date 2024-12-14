@@ -1,5 +1,5 @@
 const std = @import("std");
-const Token = @import("Token.zig");
+const Token = @import("token.zig").Token;
 const expect = std.testing.expect;
 
 const logger = std.log.scoped(.tokenizer);
@@ -11,8 +11,7 @@ pub const Tokenizer = struct {
     const State = enum {
         start,
 
-        int,
-        octal,
+        number,
 
         identifier,
 
@@ -25,8 +24,8 @@ pub const Tokenizer = struct {
         dot,
         dot_dot,
 
-        double_quote_string,
-        single_quote_string,
+        double_quote_string_literal,
+        single_quote_string_literal,
         template_literal,
 
         ampersand,
@@ -88,7 +87,7 @@ pub const Tokenizer = struct {
 
                     // TODO: Support other number types
                     '0'...'9' => {
-                        state = .int;
+                        state = .number;
                         token.tag = .int;
                     },
 
@@ -203,13 +202,13 @@ pub const Tokenizer = struct {
                     },
 
                     '"' => {
-                        state = .double_quote_string;
-                        token.tag = .double_quote_string;
+                        state = .double_quote_string_literal;
+                        token.tag = .double_quote_string_literal;
                     },
 
                     '\'' => {
-                        state = .single_quote_string;
-                        token.tag = .single_quote_string;
+                        state = .single_quote_string_literal;
+                        token.tag = .single_quote_string_literal;
                     },
 
                     '&' => {
@@ -512,18 +511,37 @@ pub const Tokenizer = struct {
                 },
 
                 // numbers
-                .int => switch (char) {
+                // For now, take anything that can be included in a number. Validation can happen later for now
+                .number => switch (char) {
                     // TODO: underscore cannot be at the end of a number
                     // TODO: only one underscore is allowed as numberic seperator
                     // TODO: Underscores cannot be used after a leading 0
-                    '0'...'9', '_' => {},
+                    '0'...'9',
+                    'A', // hex
+                    'C', // hex
+                    'D', // hex
+                    'F', // hex
+                    'o', // octal
+                    'O', // octal
+                    'x', // hex
+                    'X', // hex
+                    'e', // exponential
+                    'E', // exponential
+                    '-', // exponential
+                    '+', // exponential
+                    'n', // BigInt
+                    'b', // binary
+                    'B', // binary
+                    '_', // separator
+                    '.', // float
+                    => {},
                     else => {
                         break;
                     },
                 },
 
                 // strings
-                .double_quote_string => switch (char) {
+                .double_quote_string_literal => switch (char) {
                     '"' => {
                         self.index += 1;
                         break;
@@ -531,7 +549,7 @@ pub const Tokenizer = struct {
                     else => {},
                 },
 
-                .single_quote_string => switch (char) {
+                .single_quote_string_literal => switch (char) {
                     '\'' => {
                         self.index += 1;
                         break;
@@ -577,7 +595,7 @@ pub const Tokenizer = struct {
     }
 };
 
-fn testCode(code: []const u8, tags: []const Token.Tag, debug: bool) !void {
+fn testCode(code: [:0]const u8, tags: []const Token.Tag, debug: bool) !void {
     var tokenizer = Tokenizer.init(code);
 
     for (tags) |tag| {
@@ -719,5 +737,46 @@ test "strings" {
         \\'bar'
     ;
 
-    try testCode(code, &.{ .double_quote_string, .single_quote_string }, true);
+    try testCode(code, &.{ .double_quote_string_literal, .single_quote_string_literal }, false);
+}
+
+test "numbers" {
+    const code =
+        \\1234567890
+        \\0777
+        \\0888
+        \\0e
+        \\0e-5
+        \\0e+5
+        \\5e1 
+        \\175e-2
+        \\1e3 
+        \\1e-3
+        \\1E3 
+        \\0b10000000000000000000000000000000
+        \\0b01111111100000000000000000000000
+        \\0B00000000011111111111111111111111
+        \\0O755
+        \\0o644
+        \\0xFFFFFFFFFFFFFFFFF
+        \\0x123456789ABCDEF
+        \\0XA             
+        \\123456789123456789n 
+        \\0o777777777777n     
+        \\0x123456789ABCDEFn  
+        \\0b11101001010101010101n
+        \\1_000_000_000_000
+        \\1_050.95
+        \\0b1010_0001_1000_0101
+        \\0o2_2_5_6
+        \\0xA0_B0_C0
+        \\1_000_000_000_000_000_000_000n
+    ;
+
+    var tokenizer = Tokenizer.init(code);
+    var token: Token = tokenizer.next();
+
+    while (token.tag != .eof) : (token = tokenizer.next()) {
+        try expect(token.tag == .int);
+    }
 }
